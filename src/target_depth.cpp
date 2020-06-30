@@ -31,7 +31,15 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
  
     cv::Mat DepthImageCopy_;
     cv_bridge::CvImageConstPtr cam_depth;
-    cam_depth = cv_bridge::toCvCopy(depth_image, sensor_msgs::image_encodings::TYPE_32FC1);
+    try {
+        cam_depth = cv_bridge::toCvCopy(depth_image, sensor_msgs::image_encodings::TYPE_32FC1);
+    }
+    catch (const std::exception& e){
+        std::cout<<e.what()<<std::endl;
+        std::cout<<"Maybe check if your subscribed topic is empty?"<<std::endl;
+        return;
+    }
+
     DepthImageCopy_ = cam_depth->image.clone();
     float depth_val = (float)DepthImageCopy_.at<float>( y, x );
     float Z = depth_val;
