@@ -7,14 +7,14 @@ import time
 import argparse
 import numpy as np
 
-from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point, Twist
 from std_msgs.msg import Float32, Bool, Int32MultiArray, Int32
 from person_navigation.msg import Polar
 
 class PersonNavigation(object):
     def __init__(self, args):
-        self.target_depth_sub = rospy.Subscriber("/person_tracking/target_depth", Polar,  self.target_depth_callback, queue_size=1, buff_size=2**24)
+        #initialize subscriber and publisher
+        self.target_depth_sub = rospy.Subscriber("/person_navigation/depth_angle", Polar,  self.target_depth_callback, queue_size=1, buff_size=2**24)
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.nav_params = rospy.get_param("/person_navigation")
 
@@ -22,7 +22,7 @@ class PersonNavigation(object):
 
     #convert compressed image to opencv Mat and store opencv Mat in variable
     def target_depth_callback(self, msg):
-        angle = msg.angle
+        angle = msg.angle * 3.14159/180
         depth = msg.depth
 
         angle_vel = self.calculate_angle_vel(angle)
@@ -33,16 +33,18 @@ class PersonNavigation(object):
         cmd_vel_msg.linear.x = linear_vel
 
         #publish cmd_vel
-        cmd_vel_pub.publish(cmd_vel_msg)
+        self.cmd_vel_pub.publish(cmd_vel_msg)
+
+        rospy.loginfo("angle velocity: " + str(angle_vel) + "linear velocity: " + str(linear_vel))
 
     #main callback function for code
     def calculate_angle_vel(self, angle):
-        angle_vel = nav_params.angle_P * angle
+        angle_vel = self.nav_params["angle_P"] * angle
         return angle_vel
 
     def calculate_linear_vel(self, depth):
-        target_offset = nav_params.target_offset 
-        movement_vel = nav_params.movement_P * (depth-target_offset)
+        target_offset = self.nav_params["target_offset"]
+        movement_vel = self.nav_params["movement_P"] * (depth-target_offset)
         return movement_vel
 
 #TODO Setup args 
