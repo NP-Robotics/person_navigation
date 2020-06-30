@@ -13,8 +13,17 @@ from person_navigation.msg import Polar
 
 class PersonNavigation(object):
     def __init__(self, args):
+
+        self.args = args
+
+        if args.target_polar_topic:
+            target_polar_topic = args.target_polar_topic
+            self.target_depth_sub = rospy.Subscriber(target_polar_topic, Polar, self.target_depth_callback, queue_size=1)
+            rospy.loginfo("Subscribing to: " + target_polar_topic)
+        else:
+            rospy.loginfo("No topic stated. Please check your launch file argument")
+            
         #initialize subscriber and publisher
-        self.target_depth_sub = rospy.Subscriber("/person_navigation/depth_angle", Polar,  self.target_depth_callback, queue_size=1, buff_size=2**24)
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.nav_params = rospy.get_param("/person_navigation")
 
@@ -35,7 +44,7 @@ class PersonNavigation(object):
         #publish cmd_vel
         self.cmd_vel_pub.publish(cmd_vel_msg)
 
-        rospy.loginfo("angle velocity: " + str(angle_vel) + "linear velocity: " + str(linear_vel))
+        rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
 
     #main callback function for code
     def calculate_angle_vel(self, angle):
@@ -51,14 +60,7 @@ class PersonNavigation(object):
 def parse_args():
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video_path", type=str, default=None)
-    parser.add_argument("--display", action="store_true")
-    parser.add_argument("--frame_interval", type=int, default=1)
-    parser.add_argument("--display_width", type=int, default=800)
-    parser.add_argument("--display_height", type=int, default=600)
-    parser.add_argument("--save_results", action="store_true")
-    parser.add_argument("--camera", type=int, default="-1")
-    parser.add_argument("--img_topic", type=str)
+    parser.add_argument("--target_polar_topic", type=str)
 
     return parser.parse_known_args()
 
