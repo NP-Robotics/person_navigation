@@ -13,12 +13,12 @@ from person_navigation.msg import Polar
 
 class PersonNavigation(object):
     def __init__(self, args):
-
         self.args = args
 
         if args.target_polar_topic:
             target_polar_topic = args.target_polar_topic
             self.target_depth_sub = rospy.Subscriber(target_polar_topic, Polar, self.target_depth_callback, queue_size=1)
+
             rospy.loginfo("Subscribing to: " + target_polar_topic)
         else:
             rospy.loginfo("No topic stated. Please check your launch file argument")
@@ -26,8 +26,6 @@ class PersonNavigation(object):
         #initialize subscriber and publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.nav_params = rospy.get_param("/person_navigation")
-
-        self.args = args
 
     #convert compressed image to opencv Mat and store opencv Mat in variable
     def target_depth_callback(self, msg):
