@@ -1,0 +1,4 @@
+person_navigation:
+  angle_P: 3
+  movement_P: 3
+  target_offset: 1
