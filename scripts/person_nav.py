@@ -63,7 +63,7 @@ def parse_args():
 def main(args):
     '''Initializes and cleanup ros node'''
     person_nav = PersonNavigation(args)
-    rospy.init_node('person_nav', anonymous=True)
+    rospy.init_node('person_navigation', anonymous=True)
     try:
         rospy.spin()
     except KeyboardInterrupt:
