@@ -1,5 +1,6 @@
 <launch>
   <node name="person_navigation" pkg="person_navigation" type="person_nav.py"/> 
+  <node name="target_depth" pkg="person_navigation" type"target_depth.cpp"/>
   <rosparam file="$(find person_tracking)/configs/navigation_params.yaml" />
 
 </launch>
