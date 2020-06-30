@@ -1,0 +1,10 @@
+<launch>
+  <node name="person_navigation" pkg="person_navigation" type="person_nav.py" output="screen" args="--target_polar_topic /person_navigation/depth_angle"/> 
+  <rosparam file="$(find person_navigation)/configs/navigation_params.yaml" />
+  <include file="$(find person_tracking)/launch/person_tracker.launch" />
+<!--
+  <include file="$(find realsense2_camera)/launch/rs_aligned_depth.launch" />      
+-->
+  <include file="$(find video_stream_opencv)/launch/camera.launch" />
+
+</launch>
