@@ -17,6 +17,7 @@ class PersonNavigation(object):
             
         #initialize subscriber and publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+        self.target_present_sub = rospy.Subscriber("/person_tracking/target_present", Bool, self.target_present_callback, queue_size=1) 
 
         if args.target_polar_topic:
             target_polar_topic = args.target_polar_topic
@@ -37,6 +38,8 @@ class PersonNavigation(object):
         #previous cmd_vel for calculating D
         self.prev_cmd_vel = Twist()
 
+        self.target_present = False
+
     #main navigation callback for target angle and depth subscriber 
     def target_depth_callback(self, msg):
         angle = msg.angle * 3.14159/180
@@ -50,18 +53,28 @@ class PersonNavigation(object):
         cmd_vel_msg.linear.x = linear_vel
 
         #publish cmd_vel
-        self.cmd_vel_pub.publish(cmd_vel_msg)
-        self.prev_cmd_vel = cmd_vel_msg
+        if self.target_present:
+            self.cmd_vel_pub.publish(cmd_vel_msg)
+            self.prev_cmd_vel = cmd_vel_msg
 
-        rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
+            rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
+        else:
+            cmd_vel_msg = Twist()
+            self.cmd_vel_pub.publish(cmd_vel_msg)
+            rospy.loginfo("Target absent")
+
+    def target_present_callback(self, msg):
+        self.target_present = msg.data
         
     #utility function for calculating PID
     def calculate_angle_vel(self, angle):
         angle_vel = calculate_PID(angle, self.angle_PID, self.prev_cmd_vel.angular.z)
+        angle_vel = min(2, angle_vel)
         return angle_vel
 
     def calculate_linear_vel(self, depth):
         movement_vel = calculate_PID(depth, self.vel_PID, self.prev_cmd_vel.linear.x)
+        movement_vel = min(5, movement_vel)
         return movement_vel
     
 def parse_args():

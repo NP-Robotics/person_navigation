@@ -45,12 +45,19 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
     float Z = depth_val;
  
     float X = ((x-322.4541015625)*Z)/616.3174438476562;           //X=((U-Cx)*Z)/fx
-        float Y = ((y-243.06459045410156)*Z)/616.468017578125;           //Y=((V-Cy)*Z)/fy
+    float Y = ((y-243.06459045410156)*Z)/616.468017578125;           //Y=((V-Cy)*Z)/fy
    
-    std::cout << "Z: " << depth_val << "   X: " << X << "   Y: " << Y << std::endl;
- 
     float angle = tan((-X / 1000.0) / (Z / 1000.0)) * (180/PI);
-    std::cout<<angle<<std::endl;
+    std::cout<<"    angle: "<<angle<<std::endl;
+
+    depth_val = depth_val/1000.0;    
+    std::cout << "Depth value: " << depth_val << std::endl;
+
+    person_navigation::Polar msg;
+    msg.angle = angle;
+    msg.depth = depth_val;
+
+    pub_depth_angle.publish(msg);
  
     //msg_goal.position = msg_position.pose.position;
     //msg_goal.orientation.x = angle;
