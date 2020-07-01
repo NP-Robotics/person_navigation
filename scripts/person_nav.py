@@ -25,7 +25,13 @@ class PersonNavigation(object):
             
         #initialize subscriber and publisher
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+
         self.nav_params = rospy.get_param("/person_navigation")
+
+        self.angle_PID = self.nav_params["angle_PID"]
+        self.vel_PID = self.nav_params["vel_PID"]
+
+        self.target_offset = self.nav_params["target_offset"]
 
     #convert compressed image to opencv Mat and store opencv Mat in variable
     def target_depth_callback(self, msg):
@@ -46,12 +52,11 @@ class PersonNavigation(object):
 
     #main callback function for code
     def calculate_angle_vel(self, angle):
-        angle_vel = self.nav_params["angle_P"] * angle
+        angle_vel = self.angle_PID["P"] * angle
         return angle_vel
 
     def calculate_linear_vel(self, depth):
-        target_offset = self.nav_params["target_offset"]
-        movement_vel = self.nav_params["movement_P"] * (depth-target_offset)
+        movement_vel = self.vel_PID["P"] * (depth-self.target_offset)
         return movement_vel
 
 #TODO Setup args 

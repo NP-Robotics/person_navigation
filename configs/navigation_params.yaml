@@ -1,4 +1,10 @@
 person_navigation:
-  angle_P: 3
-  movement_P: 3
+  angle_PID:
+    P: 3
+    I: 0
+    D: 0
+  vel_PID:
+    P: 3
+    I: 0
+    D: 0
   target_offset: 1
