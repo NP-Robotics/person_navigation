@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import rospy
 import cv2
 import time
@@ -14,6 +13,9 @@ from person_navigation.msg import Polar
 class PersonNavigation(object):
     def __init__(self, args):
         self.args = args
+            
+        #initialize subscriber and publisher
+        self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
         if args.target_polar_topic:
             target_polar_topic = args.target_polar_topic
@@ -22,10 +24,8 @@ class PersonNavigation(object):
             rospy.loginfo("Subscribing to: " + target_polar_topic)
         else:
             rospy.loginfo("No topic stated. Please check your launch file argument")
-            
-        #initialize subscriber and publisher
-        self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
+        #setup params
         self.nav_params = rospy.get_param("/person_navigation")
 
         self.angle_PID = self.nav_params["angle_PID"]
@@ -33,7 +33,10 @@ class PersonNavigation(object):
 
         self.target_offset = self.nav_params["target_offset"]
 
-    #convert compressed image to opencv Mat and store opencv Mat in variable
+        #previous cmd_vel for calculating D
+        self.prev_cmd_vel = Twist()
+
+    #main navigation callback for target angle and depth subscriber 
     def target_depth_callback(self, msg):
         angle = msg.angle * 3.14159/180
         depth = msg.depth
@@ -47,21 +50,27 @@ class PersonNavigation(object):
 
         #publish cmd_vel
         self.cmd_vel_pub.publish(cmd_vel_msg)
+        self.prev_cmd_vel = cmd_vel_msg
 
         rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
-
-    #main callback function for code
+        
+    #utility function for calculating PID
     def calculate_angle_vel(self, angle):
-        angle_vel = self.angle_PID["P"] * angle
+        angle_vel = self.calculate_PID(angle, self.angle_PID, self.prev_cmd_vel.angular.z)
         return angle_vel
 
     def calculate_linear_vel(self, depth):
-        movement_vel = self.vel_PID["P"] * (depth-self.target_offset)
+        movement_vel = self.calculate_PID(depth, self.vel_PID, self.prev_cmd_vel.linear.x)
         return movement_vel
-
-#TODO Setup args 
-def parse_args():
     
+    def calculate_PID(self, value, gain, prev_val):
+        P = gain["P"] * value
+        I = 0
+        D = gain["D"] * (P - prev_val) 
+        PID = P + I + D
+        return PID
+
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target_polar_topic", type=str)
 
