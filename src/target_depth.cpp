@@ -33,6 +33,12 @@ sensor_msgs::Image depth_image_sync;
 sensor_msgs::CompressedImage colour_image_latest;
 sensor_msgs::CompressedImage colour_image_sync;
 
+person_navigation::Polar compute_depth_angle(const sensor_msgs::Image depth_img, const geometry_msgs::Point bbox_center){
+	//calculate depth and angle from depth image and bbox center
+	person_navigation::Polar computed_polar;
+	return computed_polar
+}
+
 void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 {
 	//obtain pixel coordinate
@@ -91,9 +97,10 @@ void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
 	boost::shared_ptr<geometry_msgs::Point const> bbox_boost
 	bbox_boost = ros::topic::waitForMessage<geometry_msgs::Point> ("/person_tracking/bbox_center", nh);
 	bbox_center = bbox_boost;
-
+	//person_navigation::Polar msg = compute_depth_angle(image, bbox_center)
 	colour_image_latest = msgcolour;
 }
+
 
 int main (int argc, char **argv)
 {
