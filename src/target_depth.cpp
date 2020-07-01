@@ -80,6 +80,7 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 //store most current depth image
 void depth_callback(const sensor_msgs::Image& msgdepth)
 {
+	//this function just gets the latest depth image
 	if
 		depth_image = msgdepth;
 		colour_image_sync = colour_image_latest;
@@ -87,6 +88,12 @@ void depth_callback(const sensor_msgs::Image& msgdepth)
 
 void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
 {
+	//store current depth image inside callback
+	//publish color compressed image to /person_navigation/image_color_sync/compressed
+	//wait for received message from /person_tracking/bbox_center
+	//computer angle and depth using stored depth image
+	//publish angle and depth image
+	//end callback
 	
 	colour_image_latest = msgcolour;
 }
