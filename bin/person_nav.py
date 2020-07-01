@@ -64,8 +64,6 @@ class PersonNavigation(object):
         movement_vel = calculate_PID(depth, self.vel_PID, self.prev_cmd_vel.linear.x)
         return movement_vel
     
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target_polar_topic", type=str)
