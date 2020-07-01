@@ -25,18 +25,13 @@
 #define Fy 616.46801757812
 
 ros::Publisher pub_depth_angle;
+ros::Publisher pub_colour_image;
 
-sensor_msgs::Image depth_image;
+geometry_msgs::Point bbox_center;
+sensor_msgs::Image depth_image_latest;
+sensor_msgs::Image depth_image_sync;
 sensor_msgs::CompressedImage colour_image_latest;
 sensor_msgs::CompressedImage colour_image_sync;
-
-void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
-{
-	//obtain pixel coordinate
-	float x = msgcenter->x;
-	float y = msgcenter->y;
-
-}
 
 void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 {
@@ -81,9 +76,7 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 void depth_callback(const sensor_msgs::Image& msgdepth)
 {
 	//this function just gets the latest depth image
-	if
-		depth_image = msgdepth;
-		colour_image_sync = colour_image_latest;
+	depth_image_latest = msgdepth;
 }
 
 void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
@@ -94,7 +87,11 @@ void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
 	//computer angle and depth using stored depth image
 	//publish angle and depth image
 	//end callback
-	
+	depth_image_sync = depth_image_latest;
+	boost::shared_ptr<geometry_msgs::Point const> bbox_boost
+	bbox_boost = ros::topic::waitForMessage<geometry_msgs::Point> ("/person_tracking/bbox_center", nh);
+	bbox_center = bbox_boost;
+
 	colour_image_latest = msgcolour;
 }
 
