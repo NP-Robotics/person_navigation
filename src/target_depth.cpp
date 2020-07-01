@@ -19,13 +19,19 @@
 #define PI 3.14159265
  
 ros::Publisher pub_depth_angle;
- 
+ros::NodeHandle nh;
  
 float x, y;
 sensor_msgs::Image depth_image;
+
+void depth_callback(const sensor_msgs::Image& msgdepth)
+{
+    depth_image = msgdepth;
+}
  
 void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 {
+    ros::Subscriber sub_depthImage = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, depth_callback);
     x = msgcenter->x;
     y = msgcenter->y;
  
@@ -63,20 +69,12 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
     //msg_goal.orientation.x = angle;
     //pub_goal.publish(msg_goal);
 }
- 
-void depth_callback(const sensor_msgs::Image& msgdepth)
-{
-    depth_image = msgdepth;
-}
+
  
 int main (int argc, char **argv)
 {
     ros::init(argc, argv, "target_depth");
-    ros::NodeHandle nh;
-    ros::Subscriber sub_depthImage = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1000, depth_callback);
     ros::Subscriber sub_boundingBox = nh.subscribe("/person_tracking/bbox_center", 1000, bbox_callback);
- 
     pub_depth_angle = nh.advertise<person_navigation::Polar>("/person_navigation/depth_angle", 10);
- 
     ros::spin();
 }
