@@ -88,8 +88,8 @@ void depth_callback(const sensor_msgs::Image& msgdepth)
 void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
 {
 	//store current depth image inside callback
-	//publish color compressed image to /person_navigation/image_color_sync/compressed
-	//wait for received message from /person_tracking/bbox_center
+	//call service with srv update_tracker.srv at "/person_tracking/update_tracker"
+	//wait for response after calling service
 	//computer angle and depth using stored depth image
 	//publish angle and depth image
 	//end callback
