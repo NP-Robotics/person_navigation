@@ -55,7 +55,6 @@ class PersonNavigation(object):
         #publish cmd_vel
         if self.target_present:
             self.cmd_vel_pub.publish(cmd_vel_msg)
-            self.prev_cmd_vel = cmd_vel_msg
 
             rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
         else:
@@ -68,20 +67,31 @@ class PersonNavigation(object):
 
             self.cmd_vel_pub.publish(cmd_vel_msg)
             rospy.loginfo("Target absent: Rotating")
+        
+        self.prev_cmd_vel = cmd_vel_msg
 
     def target_present_callback(self, msg):
         self.target_present = msg.data
         
     #utility function for calculating PID
     def calculate_angle_vel(self, angle):
+        rospy.loginfo("\n\nANGLE" + str(angle))
         angle_vel = calculate_PID(angle, self.angle_PID, self.prev_cmd_vel.angular.z)
-        angle_vel = min(2, angle_vel)
+        angle_vel = self.threshold(angle_vel, 2)
         return angle_vel
 
     def calculate_linear_vel(self, depth):
         movement_vel = calculate_PID(depth, self.vel_PID, self.prev_cmd_vel.linear.x)
-        movement_vel = min(5, movement_vel)
+        movement_vel = self.threshold(movement_vel, 5)
         return movement_vel
+
+    def threshold(self, val, threshold):
+        if val > threshold:
+            return threshold
+        elif val < -threshold:
+            return -threshold
+        else:
+            return val
     
 def parse_args():
     parser = argparse.ArgumentParser()
