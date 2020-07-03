@@ -50,15 +50,19 @@ person_navigation::Polar compute_depth_angle(const sensor_msgs::Image& depth_img
 	float X = ((x-Cx)*Z)/Fx;           //X=((U-Cx)*Z)/fx
     float Y = ((y-Cy)*Z)/Fy;           //Y=((V-Cy)*Z)/fy
 
-	std::cout << "Z: " << depth_val << "   X: " << X << "   Y: " << Y << std::endl;
+	std::cout << "Z: " << depth_val << "   X: " << X << "   Y: " << Y;
 
 	//angle calculation
 	float angle = atan((-X / 1000.0) / (Z / 1000.0)) * (180/PI);	
-	std::cout<<angle<<std::endl;
+	std::cout<<"   Angle: "<<angle<<std::endl;
+
+	if (std::isnan(angle)){
+		angle = 0.0;
+	}
 
 	//return depth and angle
 	person_navigation::Polar computed_polar;
-	computed_polar.depth = Z;
+	computed_polar.depth = Z/1000.0;
 	computed_polar.angle = angle;
 	return computed_polar;
 }
