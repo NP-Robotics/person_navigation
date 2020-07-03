@@ -67,7 +67,7 @@ class PersonNavigation(object):
                 cmd_vel_msg.angular.z = -2
 
             self.cmd_vel_pub.publish(cmd_vel_msg)
-            rospy.loginfo("Target absent")
+            rospy.loginfo("Target absent: Rotating")
 
     def target_present_callback(self, msg):
         self.target_present = msg.data
