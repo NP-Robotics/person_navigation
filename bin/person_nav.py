@@ -60,6 +60,12 @@ class PersonNavigation(object):
             rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
         else:
             cmd_vel_msg = Twist()
+
+            if self.prev_cmd_vel.angular.z > 0:
+                cmd_vel_msg.angular.z = 2
+            else:
+                cmd_vel_msg.angular.z = -2
+
             self.cmd_vel_pub.publish(cmd_vel_msg)
             rospy.loginfo("Target absent")
 
