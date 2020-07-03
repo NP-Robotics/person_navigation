@@ -9,6 +9,7 @@
 #include <geometry_msgs/Point.h>
 #include <std_msgs/String.h>
 #include <person_navigation/Polar.h>
+#include <person_navigation/update_tracker.h>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -25,45 +26,29 @@
 #define Fy 616.46801757812
 
 ros::Publisher pub_depth_angle;
-ros::Publisher pub_colour_image;
+ros::ServiceClient client;
 
-geometry_msgs::Point bbox_center;
 sensor_msgs::Image depth_image_latest;
-sensor_msgs::Image depth_image_sync;
 sensor_msgs::CompressedImage colour_image_latest;
 sensor_msgs::CompressedImage colour_image_sync;
 
-person_navigation::Polar compute_depth_angle(const sensor_msgs::Image depth_img, const geometry_msgs::Point bbox_center){
-	//calculate depth and angle from depth image and bbox center
-	person_navigation::Polar computed_polar;
-	return computed_polar
-}
-
-void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
+person_navigation::Polar compute_depth_angle(const sensor_msgs::Image& depth_img, const geometry_msgs::Point bbox_center)
 {
-	//obtain pixel coordinate
-	float x = msgcenter->x;
-	float y = msgcenter->y;
+	//bbox center coordinate
+	float x = bbox_center.x;
+	float y = bbox_center.y;
 
 	//Z depth calculation using depth image
 	cv::Mat DepthImageCopy_;
 	cv_bridge::CvImageConstPtr cam_depth;
-	cam_depth = cv_bridge::toCvCopy(depth_image, sensor_msgs::image_encodings::TYPE_32FC1);
+	cam_depth = cv_bridge::toCvCopy(depth_img, sensor_msgs::image_encodings::TYPE_32FC1);
 	DepthImageCopy_ = cam_depth->image.clone();
-	float depth_val = (float)DepthImageCopy_.at<float>( 240, 320 );
-	float Z = depth_val;
-
-	//X and Y coordinate calculation/Z depth calculation using depth image
-	cv::Mat DepthImageCopy_;
-	cv_bridge::CvImageConstPtr cam_depth;
-	cam_depth = cv_bridge::toCvCopy(depth_image, sensor_msgs::image_encodings::TYPE_32FC1);
-	DepthImageCopy_ = cam_depth->image.clone();
-	float depth_val = (float)DepthImageCopy_.at<float>( 240, 320 );
+	float depth_val = (float)DepthImageCopy_.at<float>( y, x );
 	float Z = depth_val;
 
 	//X and Y coordinate calculation
-	float X = ((320-Cx)*Z)/Fx;           //X=((U-Cx)*Z)/fx
-    float Y = ((240-Cy)*Z)/Fy;           //Y=((V-Cy)*Z)/fy
+	float X = ((x-Cx)*Z)/Fx;           //X=((U-Cx)*Z)/fx
+    float Y = ((y-Cy)*Z)/Fy;           //Y=((V-Cy)*Z)/fy
 
 	std::cout << "Z: " << depth_val << "   X: " << X << "   Y: " << Y << std::endl;
 
@@ -71,34 +56,49 @@ void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter)
 	float angle = atan((-X / 1000.0) / (Z / 1000.0)) * (180/PI);	
 	std::cout<<angle<<std::endl;
 
-	//publish depth and angle
-	person_navigation::Polar pub_msg;
-    pub_msg.angle = angle;
-  	pub_msg.depth = Z;
-   	pub_depth_angle.publish(pub_msg);
+	//return depth and angle
+	person_navigation::Polar computed_polar;
+	computed_polar.depth = Z;
+	computed_polar.angle = angle;
+	return computed_polar;
 }
+
+//void bbox_callback(const geometry_msgs::PointConstPtr& msgcenter){}
 
 //store most current depth image
 void depth_callback(const sensor_msgs::Image& msgdepth)
 {
-	//this function just gets the latest depth image
 	depth_image_latest = msgdepth;
 }
 
 void colour_callback(const sensor_msgs::CompressedImage& msgcolour)
 {
-	//store current depth image inside callback
-	//call service with srv update_tracker.srv at "/person_tracking/update_tracker"
-	//wait for response after calling service
-	//computer angle and depth using stored depth image
-	//publish angle and depth image
-	//end callback
-	depth_image_sync = depth_image_latest;
-	boost::shared_ptr<geometry_msgs::Point const> bbox_boost
-	bbox_boost = ros::topic::waitForMessage<geometry_msgs::Point> ("/person_tracking/bbox_center", nh);
-	bbox_center = bbox_boost;
-	//person_navigation::Polar msg = compute_depth_angle(image, bbox_center)
-	colour_image_latest = msgcolour;
+	//sync depth image with color image
+	sensor_msgs::Image depth_image_sync = depth_image_latest;
+	//std::cout<<depth_image_latest<<std::endl;
+	//call service to receive bbox center coordinate
+	person_navigation::update_tracker msgsrv;
+	msgsrv.request.img = msgcolour;
+	try 
+	{
+		if (client.call(msgsrv))
+		{
+			//calculate depth and angle
+			person_navigation::Polar pub_msg = compute_depth_angle(depth_image_sync, msgsrv.response.coordinates);
+
+			//publish depth and angle
+			pub_depth_angle.publish(pub_msg);
+		}
+		else
+		{
+			ROS_ERROR("Failed to obtain center coordinate");
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cout<<e.what()<<std::endl;
+	}
+
 }
 
 
@@ -108,10 +108,12 @@ int main (int argc, char **argv)
 	ros::init(argc, argv, "target_depth");
 	ros::NodeHandle nh;
 	ros::Subscriber sub_depthImage = nh.subscribe("/camera/aligned_depth_to_color/image_raw", 1, depth_callback);
-	ros::Subscriber sub_colourImage = nh.subscribe("/camera/color/image_raw/compressedrosto", 1, colour_callback);
-	ros::Subscriber sub_boundingBox = nh.subscribe("/person_tracking/bbox_center", 1, bbox_callback);
+	ros::Subscriber sub_colourImage = nh.subscribe("/camera/color/image_raw/compressed", 1, colour_callback);
+	//ros::Subscriber sub_boundingBox = nh.subscribe("/person_tracking/bbox_center", 1, bbox_callback);
 
 	pub_depth_angle = nh.advertise<person_navigation::Polar>("/person_navigation/depth_angle", 10);
+
+	client = nh.serviceClient<person_navigation::update_tracker>("/person_tracking/update_tracker");
 
 	ros::spin();
 }
