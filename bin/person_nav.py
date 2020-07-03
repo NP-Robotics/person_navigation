@@ -55,6 +55,10 @@ class PersonNavigation(object):
         angle_vel = self.calculate_angle_vel(angle)
         linear_vel = self.calculate_linear_vel(depth_offset)
 
+        #reduce noise
+        angle_vel = self.threshold(angle_vel, 0.01)
+        linear_vel = self.threshold(linear_vel, 0.01)
+
         cmd_vel_msg = Twist()
         cmd_vel_msg.angular.z = angle_vel
         cmd_vel_msg.linear.x = linear_vel
