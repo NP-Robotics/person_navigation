@@ -20,10 +20,10 @@
 #define PI 3.14159265
 
 //camera intrinsic parameters
-#define Cx 322.4541015625
-#define Cy 243.06459045410156
-#define Fx 616.3174438476562
-#define Fy 616.46801757812
+#define Cx 322.4541015625		//horizontal focal length
+#define Cy 243.06459045410156	//vertical focal length
+#define Fx 616.3174438476562	//horizontal principal point
+#define Fy 616.46801757812		//vertical principal point
 
 ros::Publisher pub_depth_angle;
 ros::ServiceClient client;
