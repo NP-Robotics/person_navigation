@@ -9,6 +9,8 @@ import numpy as np
 from geometry_msgs.msg import Point, Twist
 from std_msgs.msg import Float32, Bool, Int32MultiArray, Int32
 from person_navigation.msg import Polar
+from person_navigation.msg import cmd
+
 from utils.PID import calculate_PID
 
 class PersonNavigation(object):
@@ -16,7 +18,11 @@ class PersonNavigation(object):
         self.args = args
             
         #initialize subscriber and publisher
-        self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+        if args.obstacle_avoidance:
+            self.cmd_pub = rospy.Publisher("/cmd", cmd, queue_size=1)
+        else:
+            self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+
         self.target_present_sub = rospy.Subscriber("/person_tracking/target_present", Bool, self.target_present_callback, queue_size=1) 
 
         if args.target_polar_topic:
@@ -53,20 +59,32 @@ class PersonNavigation(object):
         cmd_vel_msg.angular.z = angle_vel
         cmd_vel_msg.linear.x = linear_vel
 
-        #publish cmd_vel
-        if self.target_present:
-            self.cmd_vel_pub.publish(cmd_vel_msg)
+        if self.args.obstacle_avoidance:
+            cmd_msg = self.convert_cmdvel_cmd(cmd_vel_msg)
 
-            rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
+        rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
+
+        #publish cmd_vel calculated from PID if target is present
+        if self.target_present:
+            if self.args.obstacle_avoidance:
+                self.cmd_pub.publish(cmd_msg)
+            else:
+                self.cmd_vel_pub.publish(cmd_vel_msg)
+        #publish rotation
         else:
             cmd_vel_msg = Twist()
-
             if self.prev_cmd_vel.angular.z > 0:
                 cmd_vel_msg.angular.z = 2
             else:
                 cmd_vel_msg.angular.z = -2
 
-            self.cmd_vel_pub.publish(cmd_vel_msg)
+            #publish
+            if self.args.obstacle_avoidance:
+                cmd_msg = self.convert_cmdvel_cmd(cmd_vel_msg)
+                self.cmd_pub.publish(cmd_msg)
+            else:
+                self.cmd_vel_pub.publish(cmd_vel_msg)
+
             rospy.loginfo("Target absent: Rotating")
         
         self.prev_cmd_vel = cmd_vel_msg
@@ -76,7 +94,6 @@ class PersonNavigation(object):
         
     #utility function for calculating PID
     def calculate_angle_vel(self, angle):
-        rospy.loginfo("\n\nANGLE" + str(angle))
         angle_vel = calculate_PID(angle, self.angle_PID, self.prev_cmd_vel.angular.z)
         angle_vel = self.threshold(angle_vel, 2)
         return angle_vel
@@ -93,10 +110,19 @@ class PersonNavigation(object):
             return -threshold
         else:
             return val
+
+    def convert_cmdvel_cmd(self, cmd_vel):
+        cmd_msg = cmd()
+        cmd_msg.Velocity = cmd_vel.linear.x/5
+        cmd_msg.Turn = cmd_vel.angular.z/2
+        cmd_msg.Mode = 0
+        return cmd_msg
     
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target_polar_topic", type=str)
+    parser.add_argument("--obstacle_avoidance", action="store_true")
+
 
     return parser.parse_known_args()
 
