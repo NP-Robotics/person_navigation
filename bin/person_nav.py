@@ -44,9 +44,10 @@ class PersonNavigation(object):
     def target_depth_callback(self, msg):
         angle = msg.angle * 3.14159/180
         depth = msg.depth
+        depth_offset = depth - self.target_offset
 
         angle_vel = self.calculate_angle_vel(angle)
-        linear_vel = self.calculate_linear_vel(depth)
+        linear_vel = self.calculate_linear_vel(depth_offset)
 
         cmd_vel_msg = Twist()
         cmd_vel_msg.angular.z = angle_vel
