@@ -58,7 +58,7 @@ person_navigation::Polar compute_depth_angle(const sensor_msgs::Image& depth_img
 
 	//return depth and angle
 	person_navigation::Polar computed_polar;
-	computed_polar.depth = Z;
+	computed_polar.depth = Z/1000.0;
 	computed_polar.angle = angle;
 	return computed_polar;
 }
