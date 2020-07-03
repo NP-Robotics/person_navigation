@@ -12,6 +12,8 @@ from person_navigation.msg import Polar
 from person_navigation.msg import cmd
 
 from utils.PID import calculate_PID
+from utils.filters import highpass_filter
+
 
 class PersonNavigation(object):
     def __init__(self, args):
@@ -56,8 +58,8 @@ class PersonNavigation(object):
         linear_vel = self.calculate_linear_vel(depth_offset)
 
         #reduce noise
-        angle_vel = self.threshold(angle_vel, self.nav_params["oscill_thresh"])
-        linear_vel = self.threshold(linear_vel, self.nav_params["oscill_thresh"])
+        angle_vel = self.highpass_filter(angle_vel, self.nav_params["oscill_thresh"])
+        linear_vel = self.highpass_filter(linear_vel, self.nav_params["oscill_thresh"])
 
         cmd_vel_msg = Twist()
         cmd_vel_msg.angular.z = angle_vel
