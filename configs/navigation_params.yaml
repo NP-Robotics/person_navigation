@@ -8,3 +8,4 @@ person_navigation:
     I: 0
     D: 0.8
   target_offset: 1
+  oscill_thresh: 0.01
