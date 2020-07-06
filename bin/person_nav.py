@@ -23,6 +23,7 @@ class PersonNavigation(object):
             self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
         self.target_present_sub = rospy.Subscriber("/person_tracking/target_present", Bool, self.target_present_callback, queue_size=1) 
+        self.target_indice_sub = rospy.Subscriber("/person_tracking/target_indice", Int32, self.target_indice_callback, queue_size=1) 
 
         if args.target_polar_topic:
             target_polar_topic = args.target_polar_topic
@@ -44,56 +45,63 @@ class PersonNavigation(object):
         self.prev_cmd_vel = Twist()
 
         self.target_present = False
+        self.target_indice = 0
 
     #main navigation callback for target angle and depth subscriber 
     def target_depth_callback(self, msg):
-        angle = msg.angle * 3.14159/180
-        depth = msg.depth
-        depth_offset = depth - self.target_offset
+        if self.target_indice != 0:
+            angle = msg.angle * 3.14159/180
+            depth = msg.depth
+            depth_offset = depth - self.target_offset
 
-        angle_vel = self.calculate_angle_vel(angle)
-        linear_vel = self.calculate_linear_vel(depth_offset)
+            angle_vel = self.calculate_angle_vel(angle)
+            linear_vel = self.calculate_linear_vel(depth_offset)
 
-        #reduce noise
-        angle_vel = highpass_filter(angle_vel, self.nav_params["oscill_thresh"])
-        linear_vel = highpass_filter(linear_vel, self.nav_params["oscill_thresh"])
+            #reduce noise
+            angle_vel = highpass_filter(angle_vel, self.nav_params["oscill_thresh"])
+            linear_vel = highpass_filter(linear_vel, self.nav_params["oscill_thresh"])
 
-        cmd_vel_msg = Twist()
-        cmd_vel_msg.angular.z = angle_vel
-        cmd_vel_msg.linear.x = linear_vel
-
-        if self.args.obstacle_avoidance:
-            cmd_msg = self.convert_cmdvel_cmd(cmd_vel_msg)
-
-        rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
-
-        #publish cmd_vel calculated from PID if target is present
-        if self.target_present:
-            if self.args.obstacle_avoidance:
-                self.cmd_pub.publish(cmd_msg)
-            else:
-                self.cmd_vel_pub.publish(cmd_vel_msg)
-        #publish rotation
-        else:
             cmd_vel_msg = Twist()
-            if self.prev_cmd_vel.angular.z > 0:
-                cmd_vel_msg.angular.z = 2
-            else:
-                cmd_vel_msg.angular.z = -2
+            cmd_vel_msg.angular.z = angle_vel
+            cmd_vel_msg.linear.x = linear_vel
 
-            #publish
             if self.args.obstacle_avoidance:
                 cmd_msg = self.convert_cmdvel_cmd(cmd_vel_msg)
-                self.cmd_pub.publish(cmd_msg)
-            else:
-                self.cmd_vel_pub.publish(cmd_vel_msg)
 
-            rospy.loginfo("Target absent: Rotating")
-        
-        self.prev_cmd_vel = cmd_vel_msg
+            rospy.loginfo("angle velocity: " + str(round(angle_vel, 2)) + " linear velocity: " + str(round(linear_vel, 2)))
+
+            #publish cmd_vel calculated from PID if target is present
+            if self.target_present:
+                if self.args.obstacle_avoidance:
+                    self.cmd_pub.publish(cmd_msg)
+                else:
+                    self.cmd_vel_pub.publish(cmd_vel_msg)
+            #publish rotation
+            else:
+                cmd_vel_msg = Twist()
+                if self.prev_cmd_vel.angular.z > 0:
+                    cmd_vel_msg.angular.z = 2
+                else:
+                    cmd_vel_msg.angular.z = -2
+
+                #publish
+                if self.args.obstacle_avoidance:
+                    cmd_msg = self.convert_cmdvel_cmd(cmd_vel_msg)
+                    self.cmd_pub.publish(cmd_msg)
+                else:
+                    self.cmd_vel_pub.publish(cmd_vel_msg)
+
+                rospy.loginfo("Target absent: Rotating")
+            
+            self.prev_cmd_vel = cmd_vel_msg
+        else:
+            return
 
     def target_present_callback(self, msg):
         self.target_present = msg.data
+
+    def target_indice_callback(self, msg):
+        self.target_indice = msg.data
         
     #utility function for calculating PID
     def calculate_angle_vel(self, angle):
