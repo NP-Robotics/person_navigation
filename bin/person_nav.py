@@ -107,7 +107,7 @@ class PersonNavigation(object):
     def calculate_linear_vel(self, depth):
         movement_vel = calculate_PID(depth, self.vel_PID, self.prev_cmd_vel.linear.x)
         movement_vel = self.threshold(movement_vel, 5)
-        return movement_vel
+        return max(0, movement_vel)
 
     def threshold(self, val, threshold):
         if val > threshold:
