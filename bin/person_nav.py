@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-import cv2
-import time
 import argparse
-import numpy as np
 
 from geometry_msgs.msg import Point, Twist
 from std_msgs.msg import Float32, Bool, Int32MultiArray, Int32
