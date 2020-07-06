@@ -58,8 +58,8 @@ class PersonNavigation(object):
         linear_vel = self.calculate_linear_vel(depth_offset)
 
         #reduce noise
-        angle_vel = self.highpass_filter(angle_vel, self.nav_params["oscill_thresh"])
-        linear_vel = self.highpass_filter(linear_vel, self.nav_params["oscill_thresh"])
+        angle_vel = highpass_filter(angle_vel, self.nav_params["oscill_thresh"])
+        linear_vel = highpass_filter(linear_vel, self.nav_params["oscill_thresh"])
 
         cmd_vel_msg = Twist()
         cmd_vel_msg.angular.z = angle_vel
